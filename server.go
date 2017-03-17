@@ -73,7 +73,8 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 
 	buf := make([]byte, maxBufSize)
 	for {
-		readLen, err := conn.Read(buf)
+		//readlen, err := conn.Read(buf)
+		_, err := conn.Read(buf)
 		if err != nil {
 			if err != io.EOF {
 				operr, ok := err.(*net.OpError)
@@ -87,7 +88,8 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			break
 		}
 
-		buf := buf[:readLen]
+		// TODO: Send to hpfeeds if turned on
+		//buf = buf[:readLen]
 
 		if isSSLRequest(buf) {
 			log.Debug("Got ssl request, responding with: 'N'")
@@ -96,13 +98,24 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 		}
 
 		if !sentStartup {
-			handleStartup(buf, conn)
+			ok := handleStartup(buf, conn)
+			if !ok {
+				break
+			}
 			sentStartup = true
 			continue
 		}
 
-		log.Info(string(buf))
-		log.Fatal("Asd")
+		buffer := readBuf(buf)
+		pktType := buffer.string()
+
+		if pktType == "p" {
+			log.Debug("Handling password...")
+			handlePassword(buffer, conn)
+			break
+		} else {
+			log.Info("TODO")
+		}
 	}
 }
 
@@ -115,10 +128,9 @@ func isSSLRequest(payload []byte) bool {
 	return false
 }
 
-func handleStartup(payload []byte, conn net.Conn) {
-	buf := readBuf(payload)
-
-	log.Debug("Buffer str: " + string(buf))
+func handleStartup(buff readBuf, conn net.Conn) bool {
+	buf := readBuf(buff)
+	log.Debug(buf)
 	length := buf.int32()
 	_ = buf.int32()
 	log.Debugf("Length: %d", length)
@@ -134,9 +146,11 @@ func handleStartup(payload []byte, conn net.Conn) {
 	if userExists(startupMap["user"]) {
 		// TODO: Support multiple auth types
 		conn.Write(authResponse())
+		return true
 	}
 
-	// Write response
+	conn.Write(userDoesntExistResponse(startupMap["user"]))
+	return false
 }
 
 // Currently only supports cleartext auth
@@ -147,13 +161,38 @@ func authResponse() []byte {
 	}
 	// cleartext
 	buf.int32(3)
-
-	log.Debug("Response:")
-	log.Debug(buf.wrap())
-
 	return buf.wrap()
 }
 
 func userExists(user string) bool {
 	return USERS_THAT_EXIST[user]
+}
+
+func handlePassword(buf readBuf, conn net.Conn) {
+	// TODO: Save somewhere
+	log.Debug(string(buf))
+	conn.Write(authFailedResponse())
+}
+
+// Taken from network capture and https://www.postgresql.org/docs/9.3/static/protocol-error-fields.html
+func authErrorResponse(message string) []byte {
+	buf := &writeBuf{
+		buf: []byte{'E', 0, 0, 0, 0},
+		pos: 1,
+	}
+	// Severity
+	buf.string("SERROR")
+	// Code & Position
+	buf.string("C08P01")
+	// Message
+	buf.string("M" + message + "\000")
+	return buf.wrap()
+}
+
+func authFailedResponse() []byte {
+	return authErrorResponse("Auth failed")
+}
+
+func userDoesntExistResponse(user string) []byte {
+	return authErrorResponse("No such user: " + user)
 }
