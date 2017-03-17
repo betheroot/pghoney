@@ -21,10 +21,14 @@ var (
 var USERS_THAT_EXIST = map[string]bool{"postgres": true}
 
 type PostgresServer struct {
-	listener       net.Listener
-	waitGroup      *sync.WaitGroup
+	listener net.Listener
+
+	waitGroup *sync.WaitGroup
+
 	hpfeedsChan    chan []byte
 	hpfeedsEnabled bool
+
+	port string
 }
 
 func NewPostgresServer(hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
@@ -41,6 +45,7 @@ func NewPostgresServer(hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresSe
 		waitGroup:      new(sync.WaitGroup),
 		hpfeedsChan:    hpfeedsChan,
 		hpfeedsEnabled: hpfeedsEnabled,
+		port:           port,
 	}
 }
 
@@ -50,7 +55,7 @@ func (p *PostgresServer) Close() {
 
 func (p *PostgresServer) Listen() {
 	defer p.waitGroup.Done()
-	log.Debug("Starting to listen...")
+	log.Infof("Starting to listening on port %s...", p.port)
 	for {
 		conn, err := p.listener.Accept()
 		if err != nil {
@@ -73,7 +78,6 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 
 	buf := make([]byte, maxBufSize)
 	for {
-		//readlen, err := conn.Read(buf)
 		_, err := conn.Read(buf)
 		if err != nil {
 			if err != io.EOF {
@@ -88,11 +92,13 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			break
 		}
 
-		// TODO: Send to hpfeeds if turned on
-		//buf = buf[:readLen]
+		// Send to hpfeeds if turned on
+		if p.hpfeedsEnabled {
+			p.hpfeedsChan <- buf
+		}
 
 		if isSSLRequest(buf) {
-			log.Debug("Got ssl request, responding with: 'N'")
+			log.Debug("Got ssl request...")
 			conn.Write([]byte("N"))
 			continue
 		}
@@ -114,6 +120,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			handlePassword(buffer, conn)
 			break
 		} else {
+			// TODO
 			log.Info("TODO")
 		}
 	}
@@ -130,10 +137,8 @@ func isSSLRequest(payload []byte) bool {
 
 func handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
-	log.Debug(buf)
 	length := buf.int32()
 	_ = buf.int32()
-	log.Debugf("Length: %d", length)
 
 	startupMap := map[string]string{}
 	for len(buf) > 1 {
@@ -141,7 +146,6 @@ func handleStartup(buff readBuf, conn net.Conn) bool {
 		v := buf.string()
 		startupMap[k] = v
 	}
-	log.Debugf("Startup Map: %s", startupMap)
 
 	if userExists(startupMap["user"]) {
 		// TODO: Support multiple auth types
@@ -170,7 +174,6 @@ func userExists(user string) bool {
 
 func handlePassword(buf readBuf, conn net.Conn) {
 	// TODO: Save somewhere
-	log.Debug(string(buf))
 	conn.Write(authFailedResponse())
 }
 
