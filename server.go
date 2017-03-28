@@ -137,7 +137,7 @@ func isSSLRequest(payload []byte) bool {
 
 func handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
-	length := buf.int32()
+	_ = buf.int32()
 	_ = buf.int32()
 
 	startupMap := map[string]string{}
