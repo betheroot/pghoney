@@ -2,6 +2,14 @@
 
 A simple Postgres honey pot inspired by [Elastichoney](https://github.com/jordan-wright/elastichoney)
 
+### Getting Started
+
+To install dependencies
+`go get ./...`
+
+To run pghoney (currently hardcoded to port 5433)
+`go run *.go`
+
 ### To Test:
 [ ] - hpfeeds
 

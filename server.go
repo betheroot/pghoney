@@ -104,6 +104,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 		}
 
 		if !sentStartup {
+			log.Debug("Handling startup message...")
 			ok := handleStartup(buf, conn)
 			if !ok {
 				break
@@ -137,6 +138,7 @@ func isSSLRequest(payload []byte) bool {
 
 func handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
+	// Read out the initial two numbers so we are just left with the k/v pairs.
 	_ = buf.int32()
 	_ = buf.int32()
 
@@ -149,6 +151,8 @@ func handleStartup(buff readBuf, conn net.Conn) bool {
 
 	if userExists(startupMap["user"]) {
 		// TODO: Support multiple auth types
+		// Looking for requesting cleartext passwords would be a good way to finger print
+		// pghoney. We should have md5 be the default since it is the postgres default.
 		conn.Write(authResponse())
 		return true
 	}
