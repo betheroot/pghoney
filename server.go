@@ -12,13 +12,11 @@ import (
 )
 
 var (
-	// Make configurable
+	// TODO: Make configurable
 	tcpTimeout = 10 * time.Second
 	// TODO: Make configurable + match wire protocol
 	maxBufSize = 512
 )
-
-var USERS_THAT_EXIST = map[string]bool{"postgres": true}
 
 type PostgresServer struct {
 	listener net.Listener
@@ -28,23 +26,31 @@ type PostgresServer struct {
 	hpfeedsChan    chan []byte
 	hpfeedsEnabled bool
 
+	pgUsers map[string]bool
+
+	addr string
 	port string
 }
 
-func NewPostgresServer(hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
-	host := "127.0.0.1"
-	port := "5433"
-	l, err := net.Listen("tcp", host+":"+port)
+func NewPostgresServer(port string, addr string, users []string, hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
+	listener, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Errorf("Error listening: %s", err)
 		os.Exit(1)
 	}
 
+	pgUsers := map[string]bool{}
+	for _, u := range users {
+		pgUsers[u] = true
+	}
+
 	return &PostgresServer{
-		listener:       l,
+		listener:       listener,
 		waitGroup:      new(sync.WaitGroup),
 		hpfeedsChan:    hpfeedsChan,
 		hpfeedsEnabled: hpfeedsEnabled,
+		pgUsers:        pgUsers,
+		addr:           addr,
 		port:           port,
 	}
 }
@@ -55,7 +61,7 @@ func (p *PostgresServer) Close() {
 
 func (p *PostgresServer) Listen() {
 	defer p.waitGroup.Done()
-	log.Infof("Starting to listening on port %s...", p.port)
+	log.Infof("Starting to listening on %s:%s...", p.addr, p.port)
 	for {
 		conn, err := p.listener.Accept()
 		if err != nil {
@@ -105,7 +111,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 
 		if !sentStartup {
 			log.Debug("Handling startup message...")
-			ok := handleStartup(buf, conn)
+			ok := p.handleStartup(buf, conn)
 			if !ok {
 				break
 			}
@@ -136,7 +142,7 @@ func isSSLRequest(payload []byte) bool {
 	return false
 }
 
-func handleStartup(buff readBuf, conn net.Conn) bool {
+func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
 	// Read out the initial two numbers so we are just left with the k/v pairs.
 	_ = buf.int32()
@@ -149,7 +155,7 @@ func handleStartup(buff readBuf, conn net.Conn) bool {
 		startupMap[k] = v
 	}
 
-	if userExists(startupMap["user"]) {
+	if p.pgUsers[startupMap["user"]] {
 		// TODO: Support multiple auth types
 		// Looking for requesting cleartext passwords would be a good way to finger print
 		// pghoney. We should have md5 be the default since it is the postgres default.
@@ -170,10 +176,6 @@ func authResponse() []byte {
 	// cleartext
 	buf.int32(3)
 	return buf.wrap()
-}
-
-func userExists(user string) bool {
-	return USERS_THAT_EXIST[user]
 }
 
 func handlePassword(buf readBuf, conn net.Conn) {
