@@ -29,7 +29,6 @@ To run pghoney (currently hardcoded to port 5433)
   * tcpTimeout
   * Users that exist
   * Debug logging
-[ ] - Graceful exiting
 [ ] - Clean up logging
 [ ] - Write unit tests
 [ ] - Write integration tests using nmap + psql

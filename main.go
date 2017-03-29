@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -57,8 +60,18 @@ func main() {
 
 	postgresServer := NewPostgresServer(hpfeedsChannel, hpFeedsConfig.Enabled)
 
-	// TODO: Capture SIGINT and quit gracefully
+	// Capture 'shutdown' signals and shutdown gracefully.
+	shutdownSignal := make(chan os.Signal)
+	signal.Notify(shutdownSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		sig := <-shutdownSignal
+		log.Infof("Process got signal: %s", sig)
+		log.Infof("Shutting down...")
 
-	defer postgresServer.Close()
+		postgresServer.Close()
+
+		os.Exit(0)
+	}()
+
 	postgresServer.Listen()
 }
