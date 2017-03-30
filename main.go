@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"strings"
@@ -15,14 +17,35 @@ func init() {
 }
 
 func main() {
-	port := flag.String("port", "5432", "port to run pghoney on")
-	addr := flag.String("addr", "127.0.0.1", "addr to run pghoney on")
-	pgUsers := flag.String("pg-users", "postgres", "comma seperated list of users to say exist in your fake postgres server")
-	debug := flag.Bool("debug", false, "debug logging")
-	cleartext := flag.Bool("cleartext", false, "cleartext authentication (don't use in production)")
+	type Configuration struct {
+		Port      string
+		Address   string
+		PgUsers   string
+		Debug     bool
+		Cleartext bool
+	}
+	var config Configuration
+
+	configFile := flag.String("config", "pghoney.conf", "JSON configuration file")
 	flag.Parse()
 
-	if *debug {
+	jsonConfig, err := ioutil.ReadFile(*configFile)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(jsonConfig, &config)
+	if err != nil {
+		panic(err)
+	}
+
+	port := config.Port
+	addr := config.Address
+	pgUsers := config.PgUsers
+	debug := config.Debug
+	cleartext := config.Cleartext
+
+	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
@@ -35,10 +58,10 @@ func main() {
 	}
 
 	postgresServer := NewPostgresServer(
-		*port,
-		*addr,
-		strings.Split(*pgUsers, ","),
-		*cleartext,
+		port,
+		addr,
+		strings.Split(pgUsers, ","),
+		cleartext,
 		hpfeedsChannel,
 		hpFeedsConfig.Enabled,
 	)
