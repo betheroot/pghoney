@@ -186,7 +186,7 @@ func md5AuthResponse() []byte {
 	buf.int32(5)
 	// Byte4 - "The salt to use when encrypting the password."
 	// TODO:
-	// 	Should this be hardcoded to 33 6f b7 d2 ? Feels like a good way to fingerprint pghoney.
+	// Should this be hardcoded to 33 6f b7 d2 ? Feels like a good way to fingerprint pghoney.
 	buf.bytes([]byte{51, 111, 191, 210})
 	return buf.wrap()
 }
