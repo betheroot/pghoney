@@ -15,7 +15,6 @@ To see the cli help output:
 
 ### Initial Release TODO:
 [ ] - Save passwords somewhere ***
-[ ] - Support md5 authentication and make it the default.
 [ ] - Write unit tests
   [ ] - Work properly with nmap scan
   [ ] - Work properly with nmap pgsql-brute
