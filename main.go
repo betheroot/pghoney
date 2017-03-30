@@ -50,12 +50,11 @@ func main() {
 	pgUsers := config.PgUsers
 	debug := config.Debug
 	cleartext := config.Cleartext
+	hpFeedsConfig := config.HpFeedsConfig
 
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
-
-	hpFeedsConfig := config.HpFeedsConfig
 
 	hpfeedsChannel := make(chan []byte)
 	if hpFeedsConfig.Enabled {
