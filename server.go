@@ -59,6 +59,7 @@ func NewPostgresServer(port string, addr string, users []string, cleartext bool,
 
 func (p *PostgresServer) Close() {
 	p.listener.Close()
+	p.waitGroup.Done()
 }
 
 func (p *PostgresServer) Listen() {

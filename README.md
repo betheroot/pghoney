@@ -14,11 +14,8 @@ To see the cli help output:
 `go run *.go -h`
 
 ### Initial Release TODO:
-[ ] - Save passwords somewhere ***
-[ ] - Write unit tests
-  [ ] - Work properly with nmap scan
-  [ ] - Work properly with nmap pgsql-brute
-  [ ] - Write integration tests using nmap + psql
+[ ] - Work properly with nmap scan
+[ ] - Work properly with nmap pgsql-brute
 [ ] - Add command line options for:
   * hpfeed config
     - host
@@ -29,5 +26,7 @@ To see the cli help output:
   * tcpTimeout
 [ ] - Create deploy script within fflemming's fork of mhn
 
-### TODO
-[ ] - Support md5 authentication
+### TODO's
+[ ] - Support mechanism for saving passwords in a seperate database.
+[ ] - Write integration tests using nmap + psql
+[ ] - Write integration tests using github.com/lib/pq
