@@ -19,6 +19,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1", "addr to run pghoney on")
 	pgUsers := flag.String("pg-users", "postgres", "comma seperated list of users to say exist in your fake postgres server")
 	debug := flag.Bool("debug", false, "debug logging")
+	cleartext := flag.Bool("cleartext", false, "cleartext authentication (don't use in production)")
 	flag.Parse()
 
 	if *debug {
@@ -37,6 +38,7 @@ func main() {
 		*port,
 		*addr,
 		strings.Split(*pgUsers, ","),
+		*cleartext,
 		hpfeedsChannel,
 		hpFeedsConfig.Enabled,
 	)

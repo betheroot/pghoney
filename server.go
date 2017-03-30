@@ -26,13 +26,14 @@ type PostgresServer struct {
 	hpfeedsChan    chan []byte
 	hpfeedsEnabled bool
 
-	pgUsers map[string]bool
-
 	addr string
 	port string
+
+	pgUsers   map[string]bool
+	cleartext bool
 }
 
-func NewPostgresServer(port string, addr string, users []string, hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
+func NewPostgresServer(port string, addr string, users []string, cleartext bool, hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
 	listener, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Errorf("Error listening: %s", err)
@@ -49,9 +50,10 @@ func NewPostgresServer(port string, addr string, users []string, hpfeedsChan cha
 		waitGroup:      new(sync.WaitGroup),
 		hpfeedsChan:    hpfeedsChan,
 		hpfeedsEnabled: hpfeedsEnabled,
-		pgUsers:        pgUsers,
 		addr:           addr,
 		port:           port,
+		cleartext:      cleartext,
+		pgUsers:        pgUsers,
 	}
 }
 
@@ -159,7 +161,11 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 		// TODO: Support multiple auth types
 		// Looking for requesting cleartext passwords would be a good way to finger print
 		// pghoney. We should have md5 be the default since it is the postgres default.
-		conn.Write(authResponse())
+		if p.cleartext {
+			conn.Write(cleartextAuthResponse())
+		} else {
+			conn.Write(md5AuthResponse())
+		}
 		return true
 	}
 
@@ -167,15 +173,29 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	return false
 }
 
-// Currently only supports cleartext auth
-func authResponse() []byte {
-	buf := &writeBuf{
-		buf: []byte{'R', 0, 0, 0, 0}, //
-		pos: 1,
-	}
+func cleartextAuthResponse() []byte {
+	buf := authResponsePrefix()
 	// cleartext
 	buf.int32(3)
 	return buf.wrap()
+}
+
+func md5AuthResponse() []byte {
+	buf := authResponsePrefix()
+	// md5
+	buf.int32(5)
+	// Byte4 - "The salt to use when encrypting the password."
+	// TODO:
+	// 	Should this be hardcoded to 33 6f b7 d2 ? Feels like a good way to fingerprint pghoney.
+	buf.bytes([]byte{51, 111, 191, 210})
+	return buf.wrap()
+}
+
+func authResponsePrefix() *writeBuf {
+	return &writeBuf{
+		buf: []byte{'R', 0, 0, 0, 0},
+		pos: 1,
+	}
 }
 
 func handlePassword(buf readBuf, conn net.Conn) {

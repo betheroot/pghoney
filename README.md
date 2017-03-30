@@ -13,15 +13,13 @@ To run pghoney (default is 127.0.0.1:5432)
 To see the cli help output:
 `go run *.go -h`
 
-### To Test:
-[ ] - hpfeeds
-
 ### Initial Release TODO:
-[ ] - Work properly with nmap scan
-[ ] - Work properly with nmap pgsql-brute
 [ ] - Save passwords somewhere ***
+[ ] - Support md5 authentication and make it the default.
 [ ] - Write unit tests
-[ ] - Write integration tests using nmap + psql
+  [ ] - Work properly with nmap scan
+  [ ] - Work properly with nmap pgsql-brute
+  [ ] - Write integration tests using nmap + psql
 [ ] - Add command line options for:
   * hpfeed config
     - host
@@ -30,6 +28,7 @@ To see the cli help output:
     - ident?
   * maxBufSize
   * tcpTimeout
+[ ] - Create deploy script within fflemming's fork of mhn
 
 ### TODO
 [ ] - Support md5 authentication
