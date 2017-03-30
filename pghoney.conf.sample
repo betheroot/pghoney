@@ -1,0 +1,8 @@
+{
+  "Port":"5432",
+  "Address":"127.0.0.1",
+  "PgUsers":"postgres",
+  "Debug":false,
+  "Cleartext":false
+}
+
