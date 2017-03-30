@@ -25,13 +25,9 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
-func main() {
+func configurationFrom(configFile string) Configuration {
 	var config Configuration
-
-	configFile := flag.String("config", "pghoney.conf", "JSON configuration file")
-	flag.Parse()
-
-	jsonConfig, err := ioutil.ReadFile(*configFile)
+	jsonConfig, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +36,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	return config
+}
+
+func main() {
+	configFile := flag.String("config", "pghoney.conf", "JSON configuration file")
+	flag.Parse()
+	config := configurationFrom(*configFile)
 
 	port := strconv.Itoa(config.Port)
 	addr := config.Address
