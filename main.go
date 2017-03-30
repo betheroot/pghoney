@@ -18,11 +18,12 @@ func init() {
 
 func main() {
 	type Configuration struct {
-		Port      string
-		Address   string
-		PgUsers   string
-		Debug     bool
-		Cleartext bool
+		Port          string `json:"port"`
+		Address       string `json:"address"`
+		PgUsers       string `json:"pgUsers"`
+		Debug         bool   `json:"debug"`
+		Cleartext     bool   `json:"cleartext"`
+		HpFeedsConfig `json:"hpfeedsConfig"`
 	}
 	var config Configuration
 
