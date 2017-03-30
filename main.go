@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -18,7 +19,7 @@ func init() {
 
 func main() {
 	type Configuration struct {
-		Port          string `json:"port"`
+		Port          int    `json:"port"`
 		Address       string `json:"address"`
 		PgUsers       string `json:"pgUsers"`
 		Debug         bool   `json:"debug"`
@@ -40,7 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	port := config.Port
+	port := strconv.Itoa(config.Port)
 	addr := config.Address
 	pgUsers := config.PgUsers
 	debug := config.Debug
