@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 
 	log "github.com/Sirupsen/logrus"
@@ -19,11 +18,11 @@ func init() {
 
 func main() {
 	type Configuration struct {
-		Port          int    `json:"port"`
-		Address       string `json:"address"`
-		PgUsers       string `json:"pgUsers"`
-		Debug         bool   `json:"debug"`
-		Cleartext     bool   `json:"cleartext"`
+		Port          int      `json:"port"`
+		Address       string   `json:"address"`
+		PgUsers       []string `json:"pgUsers"`
+		Debug         bool     `json:"debug"`
+		Cleartext     bool     `json:"cleartext"`
 		HpFeedsConfig `json:"hpfeedsConfig"`
 	}
 	var config Configuration
@@ -61,7 +60,7 @@ func main() {
 	postgresServer := NewPostgresServer(
 		port,
 		addr,
-		strings.Split(pgUsers, ","),
+		pgUsers,
 		cleartext,
 		hpfeedsChannel,
 		hpFeedsConfig.Enabled,
