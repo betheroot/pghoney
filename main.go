@@ -50,12 +50,11 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	hpFeedsConfig := &HpFeedsConfig{
-		Enabled: false,
-	}
+	hpFeedsConfig := config.HpFeedsConfig
+
 	hpfeedsChannel := make(chan []byte)
 	if hpFeedsConfig.Enabled {
-		go hpfeedsConnect(hpFeedsConfig, hpfeedsChannel)
+		go hpfeedsConnect(&hpFeedsConfig, hpfeedsChannel)
 	}
 
 	postgresServer := NewPostgresServer(
