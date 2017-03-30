@@ -12,19 +12,20 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+type Configuration struct {
+	Port          int      `json:"port"`
+	Address       string   `json:"address"`
+	PgUsers       []string `json:"pgUsers"`
+	Debug         bool     `json:"debug"`
+	Cleartext     bool     `json:"cleartext"`
+	HpFeedsConfig `json:"hpfeedsConfig"`
+}
+
 func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
 func main() {
-	type Configuration struct {
-		Port          int      `json:"port"`
-		Address       string   `json:"address"`
-		PgUsers       []string `json:"pgUsers"`
-		Debug         bool     `json:"debug"`
-		Cleartext     bool     `json:"cleartext"`
-		HpFeedsConfig `json:"hpfeedsConfig"`
-	}
 	var config Configuration
 
 	configFile := flag.String("config", "pghoney.conf", "JSON configuration file")
