@@ -106,7 +106,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			select {
 			case p.hpfeedsChan <- buf:
 			default:
-				log.Warn("Channel full, discarding message")
+				log.Warn("Channel full, discarding message - check HPFeeds configuration")
 				log.Infof("Discarded buffer: %s", buf)
 			}
 		}
