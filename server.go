@@ -145,10 +145,38 @@ func isSSLRequest(payload []byte) bool {
 	return false
 }
 
+// -1 means everything is null
+func indexOfLastFilledByte(buf readBuf) int {
+	for i := 0; i < len(buf); i += 4 {
+		word := buf[i : i+4]
+		if isNullWord(word) {
+			return i - 1
+		}
+	}
+	return len(buf) - 1
+}
+
+func isNullWord(word []byte) bool {
+	for _, v := range word {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
 	// Read out the initial two numbers so we are just left with the k/v pairs.
-	_ = buf.int32()
+	actualLength := indexOfLastFilledByte(buf) + 1
+	claimedLength := int(buf.int32())
+
+	if (actualLength == -1) || (claimedLength != actualLength) {
+		log.Debugf("Invalid handshake request received from %s, ", conn.RemoteAddr())
+		log.Debugf("claimed length: %d, actual length: %d", claimedLength, actualLength)
+		conn.Write(handshakeErrorResponse())
+		return true
+	}
 	_ = buf.int32()
 
 	startupMap := map[string]string{}
@@ -225,4 +253,16 @@ func authFailedResponse() []byte {
 
 func userDoesntExistResponse(user string) []byte {
 	return authErrorResponse("No such user: " + user)
+}
+
+// Taken from a tcpdump of an nmap scan error
+func handshakeErrorResponse() []byte {
+	return []byte{69, 0, 0, 0, 132, 83, 70, 65, 84, 65, 76, 0, 67, 48, 65, 48, 48, 48,
+		0, 77, 117, 110, 115, 117, 112, 112, 111, 114, 116, 101, 100, 32, 102, 114,
+		111, 110, 116, 101, 110, 100, 32, 112, 114, 111, 116, 111, 99, 111, 108,
+		32, 54, 53, 51, 54, 51, 46, 49, 57, 55, 55, 56, 58, 32, 115, 101, 114, 118,
+		101, 114, 32, 115, 117, 112, 112, 111, 114, 116, 115, 32, 49, 46, 48, 32,
+		116, 111, 32, 51, 46, 48, 0, 70, 112, 111, 115, 116, 109, 97, 115, 116,
+		101, 114, 46, 99, 0, 76, 50, 48, 48, 53, 0, 82, 80, 114, 111, 99, 101,
+		115, 115, 83, 116, 97, 114, 116, 117, 112, 80, 97, 99, 107, 101, 116, 0, 0}
 }
