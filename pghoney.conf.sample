@@ -1,0 +1,16 @@
+{
+  "port":5432,
+  "address":"127.0.0.1",
+  "pgUsers":["postgres"],
+  "debug":false,
+  "cleartext":false,
+  "hpfeedsConfig":{
+    "port":10000,
+    "host":"127.0.0.1",
+    "channel":"pghoney.events",
+    "ident":"abc123",
+    "secret":"def567",
+    "enabled":true
+  }
+}
+
