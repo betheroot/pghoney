@@ -10,7 +10,7 @@
     "channel":"pghoney.events",
     "ident":"abc123",
     "secret":"def567",
-    "enabled":true
+    "enabled":false
   }
 }
 
