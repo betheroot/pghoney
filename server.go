@@ -103,7 +103,12 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 
 		// Send to hpfeeds if turned on
 		if p.hpfeedsEnabled {
-			p.hpfeedsChan <- buf
+			select {
+			case p.hpfeedsChan <- buf:
+			default:
+				log.Warn("Channel full, discarding message - check HPFeeds configuration")
+				log.Infof("Discarded buffer: %s", buf)
+			}
 		}
 
 		if isSSLRequest(buf) {
