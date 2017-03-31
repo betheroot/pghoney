@@ -56,7 +56,7 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	hpfeedsChannel := make(chan []byte)
+	hpfeedsChannel := make(chan []byte, 1024)
 	if hpFeedsConfig.Enabled {
 		go hpfeedsConnect(&hpFeedsConfig, hpfeedsChannel)
 	}
