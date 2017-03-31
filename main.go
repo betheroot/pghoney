@@ -29,12 +29,12 @@ func configurationFrom(configFile string) Configuration {
 	var config Configuration
 	jsonConfig, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Couldn't %s", err)
 	}
 
 	err = json.Unmarshal(jsonConfig, &config)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Couldn't parse JSON in %s: %s", configFile, err)
 	}
 
 	return config
