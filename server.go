@@ -169,7 +169,7 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
 	// Read out the initial two numbers so we are just left with the k/v pairs.
 	actualLength := indexOfLastFilledByte(buf) + 1
-	claimedLength := int(buf.int32())
+	claimedLength := buf.int32()
 
 	if (actualLength == -1) || (claimedLength != actualLength) {
 		log.Debugf("Invalid handshake request received from %s, ", conn.RemoteAddr())
