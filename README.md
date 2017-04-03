@@ -30,3 +30,4 @@ To see the cli help output:
 [ ] - Support mechanism for saving passwords in a seperate database.
 [ ] - Write integration tests using nmap + psql
 [ ] - Write integration tests using github.com/lib/pq
+[ ] - Support proper error for "cancelling" a query (12345678, very similar to SSL request)
