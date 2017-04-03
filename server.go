@@ -236,12 +236,17 @@ func handlePassword(buf readBuf, conn net.Conn) {
 	conn.Write(authFailedResponse())
 }
 
+func authFailedResponse() []byte {
+	return authErrorResponse("Auth failed")
+}
+
+func userDoesntExistResponse(user string) []byte {
+	return authErrorResponse("No such user: " + user)
+}
+
 // Taken from network capture and https://www.postgresql.org/docs/9.3/static/protocol-error-fields.html
 func authErrorResponse(message string) []byte {
-	buf := &writeBuf{
-		buf: []byte{'E', 0, 0, 0, 0},
-		pos: 1,
-	}
+	buf := errorResponsePrefix()
 	// Severity
 	buf.string("SERROR")
 	// Code & Position
@@ -251,22 +256,27 @@ func authErrorResponse(message string) []byte {
 	return buf.wrap()
 }
 
-func authFailedResponse() []byte {
-	return authErrorResponse("Auth failed")
-}
-
-func userDoesntExistResponse(user string) []byte {
-	return authErrorResponse("No such user: " + user)
-}
-
 // Taken from a tcpdump of an nmap scan error
 func handshakeErrorResponse() []byte {
-	return []byte{69, 0, 0, 0, 132, 83, 70, 65, 84, 65, 76, 0, 67, 48, 65, 48, 48, 48,
-		0, 77, 117, 110, 115, 117, 112, 112, 111, 114, 116, 101, 100, 32, 102, 114,
-		111, 110, 116, 101, 110, 100, 32, 112, 114, 111, 116, 111, 99, 111, 108,
-		32, 54, 53, 51, 54, 51, 46, 49, 57, 55, 55, 56, 58, 32, 115, 101, 114, 118,
-		101, 114, 32, 115, 117, 112, 112, 111, 114, 116, 115, 32, 49, 46, 48, 32,
-		116, 111, 32, 51, 46, 48, 0, 70, 112, 111, 115, 116, 109, 97, 115, 116,
-		101, 114, 46, 99, 0, 76, 50, 48, 48, 53, 0, 82, 80, 114, 111, 99, 101,
-		115, 115, 83, 116, 97, 114, 116, 117, 112, 80, 97, 99, 107, 101, 116, 0, 0}
+	buf := errorResponsePrefix()
+	// Severity
+	buf.string("SERROR")
+	// Code
+	buf.string("C0A000")
+	// Message - TODO: make more dynamic
+	buf.string("Munsupported frontend protocol 65363.19778: server supports 1.0 to 3.0")
+	// File
+	buf.string("Fpostmaster.c")
+	// Line
+	buf.string("L2005")
+	// Routine
+	buf.string("RProcessStartupPacket" + "\000")
+	return buf.wrap()
+}
+
+func errorResponsePrefix() *writeBuf {
+	return &writeBuf{
+		buf: []byte{'E', 0, 0, 0, 0},
+		pos: 1,
+	}
 }
