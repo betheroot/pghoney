@@ -58,12 +58,11 @@ func NewPostgresServer(port string, addr string, users []string, cleartext bool,
 }
 
 func (p *PostgresServer) Close() {
+	p.waitGroup.Wait()
 	p.listener.Close()
-	p.waitGroup.Done()
 }
 
 func (p *PostgresServer) Listen() {
-	defer p.waitGroup.Done()
 	log.Infof("Starting to listening on %s:%s...", p.addr, p.port)
 	for {
 		conn, err := p.listener.Accept()
@@ -72,9 +71,9 @@ func (p *PostgresServer) Listen() {
 			continue
 		}
 
-		p.waitGroup.Add(1)
 		conn.SetDeadline(time.Now().Add(tcpTimeout))
 
+		p.waitGroup.Add(1)
 		go p.handleRequest(conn)
 	}
 }
