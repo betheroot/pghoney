@@ -104,6 +104,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 		if p.hpfeedsEnabled {
 			select {
 			case p.hpfeedsChan <- buf:
+				log.Debug("Sent packet to hpfeeds")
 			default:
 				log.Warn("Channel full, discarding message - check HPFeeds configuration")
 				log.Infof("Discarded buffer: %s", buf)
@@ -154,7 +155,7 @@ func indexOfLastFilledByte(buf readBuf) int {
 	for i := 0; i < len(buf); i += 4 {
 		word := buf[i : i+4]
 		if isNullWord(word) {
-			return i - 1
+			return i + 1
 		}
 	}
 	return len(buf) - 1
@@ -178,6 +179,7 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	if (actualLength == 0) || (claimedLength != actualLength) {
 		log.Debugf("Invalid handshake request received from %s, ", conn.RemoteAddr())
 		log.Debugf("claimed length: %d, actual length: %d", claimedLength, actualLength)
+		log.Debugf("Packet contents: %v", buff)
 		conn.Write(handshakeErrorResponse())
 		return true
 	}
