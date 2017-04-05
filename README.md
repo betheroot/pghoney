@@ -14,14 +14,7 @@ To see the cli help output:
 `go run *.go -h`
 
 ### Initial Release TODO:
-[ ] - Work properly with nmap scan
 [ ] - Work properly with nmap pgsql-brute
-[ ] - Add command line options for:
-  * hpfeed config
-    - host
-    - port
-    - secret
-    - ident?
   * maxBufSize
   * tcpTimeout
 [ ] - Create deploy script within fflemming's fork of mhn
