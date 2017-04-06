@@ -172,10 +172,23 @@ func indexOfLastFilledByte(buf readBuf) int {
 	for i := 0; i < len(buf); i += 4 {
 		word := buf[i : i+4]
 		if isNullWord(word) {
-			return i - 1
+			return i - numberOfTrailingNulls(buf[i-4:i])
 		}
 	}
 	return len(buf) - 1
+}
+
+// Takes a word like: %v[108, 0, 0, 0] and returns 3, the number of trailing nulls.
+func numberOfTrailingNulls(word []byte) int {
+	counter := 0
+	for i := len(word) - 1; i >= 0; i-- {
+		if word[i] == 0 {
+			counter++
+		} else {
+			return counter
+		}
+	}
+	return counter
 }
 
 func isNullWord(word []byte) bool {
@@ -189,8 +202,8 @@ func isNullWord(word []byte) bool {
 
 func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	buf := readBuf(buff)
-	// Read out the initial two numbers so we are just left with the k/v pairs.
-	actualLength := indexOfLastFilledByte(buf) + 1
+	// Actual length finds the last byte and then adds two, because there is two null terminators at the end of the packet.
+	actualLength := indexOfLastFilledByte(buf) + 2
 	claimedLength := buf.int32()
 
 	if (actualLength == 0) || (claimedLength != actualLength) {
