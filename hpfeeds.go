@@ -7,6 +7,14 @@ import (
 	hpfeeds "github.com/fw42/go-hpfeeds"
 )
 
+type HpFeedsEvent struct {
+	Packet     []byte `json:"packet"`
+	SourceIP   string `json:"source_ip"`
+	SourcePort string `json:"source_port"`
+	DestIP     string `json:"dest_ip"`
+	DestPort   string `json:"dest_port"`
+}
+
 type HpFeedsConfig struct {
 	Host    string `json:"host"`
 	Port    int    `json:"port"`
