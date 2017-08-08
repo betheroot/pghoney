@@ -93,6 +93,33 @@ func handleError(err error) {
 	}
 }
 
+func (p *PostgresServer) sendToHpFeeds(buf []byte, conn net.Conn) error {
+	sourceAddr := conn.RemoteAddr().String()
+	event := HpFeedsEvent{
+		Packet:     buf,
+		SourceIP:   strings.Split(sourceAddr, ":")[0],
+		SourcePort: strings.Split(sourceAddr, ":")[1],
+		DestIP:     p.addr,
+		DestPort:   p.port,
+	}
+
+	eventJson, err := json.Marshal(event)
+	if err != nil {
+		log.Errorf("Error sending event to hpfeeds. Err: %s", err)
+		return err
+	}
+
+	select {
+	case p.hpfeedsChan <- eventJson:
+		log.Debug("Sent event to hpfeeds")
+	default:
+		log.Warn("Channel full, discarding message - check HPFeeds configuration")
+		log.Infof("Discarded buffer: %s", buf)
+	}
+
+	return err
+}
+
 // PostgresServer receives TCP Connections and creates instances of PostgresConnections
 // PostgresConnections then figure out how to respond to the request by checking its current state.
 // It then asks the PostgresResponder to respond
@@ -113,31 +140,9 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			break
 		}
 
-		//FIXME: Move to it's own func
 		// Send to hpfeeds if turned on
 		if p.hpfeedsEnabled {
-			sourceAddr := conn.RemoteAddr().String()
-			event := HpFeedsEvent{
-				Packet:     buf,
-				SourceIP:   strings.Split(sourceAddr, ":")[0],
-				SourcePort: strings.Split(sourceAddr, ":")[1],
-				DestIP:     p.addr,
-				DestPort:   p.port,
-			}
-
-			eventJson, err := json.Marshal(event)
-			if err != nil {
-				log.Errorf("Error sending event to hpfeeds. Err: %s", err)
-				continue
-			}
-
-			select {
-			case p.hpfeedsChan <- eventJson:
-				log.Debug("Sent event to hpfeeds")
-			default:
-				log.Warn("Channel full, discarding message - check HPFeeds configuration")
-				log.Infof("Discarded buffer: %s", buf)
-			}
+			p.sendToHpFeeds(buf, conn)
 		}
 
 		//FIXME: Remove conditional complexity
