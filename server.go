@@ -179,8 +179,8 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 // Initial requests:
 // 	SSL Request - 00 00 00 08 04 d2 16 2f
 func isSSLRequest(payload []byte) bool {
-	//FIXME: Label magic number
-	if bytes.Compare(payload[:8], []byte{0, 0, 0, 8, 4, 210, 22, 47}) == 0 {
+	sslRequestMagicNumber := []byte{0, 0, 0, 8, 4, 210, 22, 47}
+	if bytes.Compare(payload[:8], sslRequestMagicNumber) == 0 {
 		return true
 	}
 	return false
