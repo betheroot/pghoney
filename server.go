@@ -67,6 +67,7 @@ func (p *PostgresServer) Close() {
 func (p *PostgresServer) Listen() {
 	log.Infof("Starting to listening on %s:%s...", p.addr, p.port)
 	for {
+		//FIXME: conn is an example of primitive obsession
 		conn, err := p.listener.Accept()
 		if err != nil {
 			log.Warn("Error accepting: %s", err)
@@ -79,6 +80,10 @@ func (p *PostgresServer) Listen() {
 		go p.handleRequest(conn)
 	}
 }
+
+// PostgresServer receives TCP Connections and creates instances of PostgresConnections
+// PostgresConnections then figure out how to respond to the request by checking its current state.
+// It then asks the PostgresResponder to respond
 
 func (p *PostgresServer) handleRequest(conn net.Conn) {
 	defer p.waitGroup.Done()
