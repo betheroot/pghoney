@@ -81,6 +81,18 @@ func (p *PostgresServer) Listen() {
 	}
 }
 
+func handleError(err error) {
+	if err != io.EOF {
+		operr, ok := err.(*net.OpError)
+		if ok && operr.Timeout() {
+			log.Info("Timed out when reading buffer. Err: %s", err)
+			return
+		}
+
+		log.Warn("Error reading buffer. Err: %s", err)
+	}
+}
+
 // PostgresServer receives TCP Connections and creates instances of PostgresConnections
 // PostgresConnections then figure out how to respond to the request by checking its current state.
 // It then asks the PostgresResponder to respond
@@ -94,19 +106,10 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 
 	buf := make([]byte, maxBufSize)
 	for {
-		//FIXME: Should be it's own func
 		//FIXME: buf is an example of primitive obsession
 		_, err := conn.Read(buf)
 		if err != nil {
-			if err != io.EOF {
-				operr, ok := err.(*net.OpError)
-				if ok && operr.Timeout() {
-					log.Info("Timed out when reading buffer. Err: %s", err)
-					break
-				}
-
-				log.Warn("Error reading buffer. Err: %s", err)
-			}
+			handleError(err)
 			break
 		}
 
