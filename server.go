@@ -84,10 +84,13 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 	defer p.waitGroup.Done()
 	defer conn.Close()
 
+	//FIXME: What is this?
 	sentStartup := false
 
 	buf := make([]byte, maxBufSize)
 	for {
+		//FIXME: Should be it's own func
+		//FIXME: buf is an example of primitive obsession
 		_, err := conn.Read(buf)
 		if err != nil {
 			if err != io.EOF {
@@ -102,6 +105,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			break
 		}
 
+		//FIXME: Move to it's own func
 		// Send to hpfeeds if turned on
 		if p.hpfeedsEnabled {
 			sourceAddr := conn.RemoteAddr().String()
@@ -128,6 +132,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 			}
 		}
 
+		//FIXME: Remove conditional complexity
 		if isSSLRequest(buf) {
 			log.Debug("Got ssl request...")
 			conn.Write([]byte("N"))
@@ -161,6 +166,7 @@ func (p *PostgresServer) handleRequest(conn net.Conn) {
 // Initial requests:
 // 	SSL Request - 00 00 00 08 04 d2 16 2f
 func isSSLRequest(payload []byte) bool {
+	//FIXME: Label magic number
 	if bytes.Compare(payload[:8], []byte{0, 0, 0, 8, 4, 210, 22, 47}) == 0 {
 		return true
 	}
@@ -227,8 +233,10 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 		// Looking for requesting cleartext passwords would be a good way to finger print
 		// pghoney. We should have md5 be the default since it is the postgres default.
 		if p.cleartext {
+			//FIXME: Bad names
 			conn.Write(cleartextAuthResponse())
 		} else {
+			//FIXME: Bad names
 			conn.Write(md5AuthResponse())
 		}
 		return true
@@ -250,8 +258,7 @@ func md5AuthResponse() []byte {
 	// md5
 	buf.int32(5)
 	// Byte4 - "The salt to use when encrypting the password."
-	// TODO:
-	// Should this be hardcoded to 33 6f b7 d2 ? Feels like a good way to fingerprint pghoney.
+	// FIXME: Don't hardcode the salt
 	buf.bytes([]byte{51, 111, 191, 210})
 	return buf.wrap()
 }
