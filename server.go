@@ -81,7 +81,7 @@ func (p *PostgresServer) Listen() {
 	}
 }
 
-func handleError(err error) {
+func handleConnReadError(err error) {
 	if err != io.EOF {
 		operr, ok := err.(*net.OpError)
 		if ok && operr.Timeout() {
@@ -93,10 +93,10 @@ func handleError(err error) {
 	}
 }
 
-func (p *PostgresServer) sendToHpFeeds(buf []byte, conn net.Conn) error {
-	sourceAddr := conn.RemoteAddr().String()
+func (p *PostgresServer) sendToHpFeeds(pgConn *PostgresConnection) error {
+	sourceAddr := pgConn.connection.RemoteAddr().String()
 	event := HpFeedsEvent{
-		Packet:     buf,
+		Packet:     pgConn.buffer,
 		SourceIP:   strings.Split(sourceAddr, ":")[0],
 		SourcePort: strings.Split(sourceAddr, ":")[1],
 		DestIP:     p.addr,
@@ -114,60 +114,87 @@ func (p *PostgresServer) sendToHpFeeds(buf []byte, conn net.Conn) error {
 		log.Debug("Sent event to hpfeeds")
 	default:
 		log.Warn("Channel full, discarding message - check HPFeeds configuration")
-		log.Infof("Discarded buffer: %s", buf)
+		log.Infof("Discarded buffer: %s", pgConn.buffer)
 	}
 
 	return err
 }
 
+// FIXME
 // PostgresServer receives TCP Connections and creates instances of PostgresConnections
 // PostgresConnections then figure out how to respond to the request by checking its current state.
 // It then asks the PostgresResponder to respond
+
+type PostgresConnection struct {
+	buffer         []byte
+	connection     net.Conn
+	hasSentStartup bool
+}
+
+func NewPostgresConnection(conn net.Conn) *PostgresConnection {
+	return &PostgresConnection{
+		buffer:     make([]byte, maxBufSize),
+		connection: conn,
+	}
+}
+
+func (pgConn *PostgresConnection) readOffConnection() error {
+	pgConn.resetBuffer()
+	_, err := pgConn.connection.Read(pgConn.buffer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pgConn *PostgresConnection) resetBuffer() {
+	pgConn.buffer = make([]byte, maxBufSize)
+}
+
+func (pgConn *PostgresConnection) isSSLRequest() bool {
+	return isSSLRequest(pgConn.buffer)
+}
 
 func (p *PostgresServer) handleRequest(conn net.Conn) {
 	defer p.waitGroup.Done()
 	defer conn.Close()
 
-	//FIXME: What is this?
-	sentStartup := false
+	pgConn := NewPostgresConnection(conn)
 
-	buf := make([]byte, maxBufSize)
 	for {
-		//FIXME: buf is an example of primitive obsession
-		_, err := conn.Read(buf)
+		err := pgConn.readOffConnection()
 		if err != nil {
-			handleError(err)
+			handleConnReadError(err)
 			break
 		}
 
 		// Send to hpfeeds if turned on
 		if p.hpfeedsEnabled {
-			p.sendToHpFeeds(buf, conn)
+			p.sendToHpFeeds(pgConn)
 		}
 
 		//FIXME: Remove conditional complexity
-		if isSSLRequest(buf) {
+		if pgConn.isSSLRequest() {
 			log.Debug("Got ssl request...")
-			conn.Write([]byte("N"))
+			pgConn.connection.Write([]byte("N"))
 			continue
 		}
 
-		if !sentStartup {
-			log.Debug("Handling startup message...")
-			ok := p.handleStartup(buf, conn)
+		if !pgConn.hasSentStartup {
+			ok := p.handleStartup(pgConn.buffer, pgConn.connection)
 			if !ok {
 				break
 			}
-			sentStartup = true
+			pgConn.hasSentStartup = true
 			continue
 		}
 
-		buffer := readBuf(buf)
+		buffer := readBuf(pgConn.buffer)
 		pktType := buffer.string()
 
 		if pktType == "p" {
 			log.Debug("Handling password...")
-			handlePassword(buffer, conn)
+			handlePassword(buffer, pgConn.connection)
 			break
 		} else {
 			// TODO
@@ -220,6 +247,7 @@ func isNullWord(word []byte) bool {
 }
 
 func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
+	log.Debug("Handling startup message...")
 	buf := readBuf(buff)
 	// Actual length finds the last byte and then adds two, because there is two null terminators at the end of the packet.
 	actualLength := indexOfLastFilledByte(buf) + 2
