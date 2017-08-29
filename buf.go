@@ -2,6 +2,8 @@ package main
 
 // Buffer type (taken directly from https://github.com/lib/pq/blob/master/buf.go)
 
+// FIXME: readBuf / writeBuf are horrible names in this context.
+
 import (
 	"bytes"
 	"encoding/binary"
