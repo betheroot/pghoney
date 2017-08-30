@@ -142,9 +142,9 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 	}
 }
 
-func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
+func (p *PostgresServer) handleStartup(buff postgresRequest, conn net.Conn) bool {
 	log.Debug("Handling startup message...")
-	buf := readBuf(buff)
+	buf := postgresRequest(buff)
 	// Actual length finds the last byte and then adds two, because there is two null terminators at the end of the packet.
 	actualLength := indexOfLastFilledByte(buf) + 2
 	claimedLength := buf.int32()
@@ -181,7 +181,7 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	return false
 }
 
-func handlePassword(buf readBuf, conn net.Conn) {
+func handlePassword(buf postgresRequest, conn net.Conn) {
 	log.Debug("Handling password...")
 	conn.Write(authFailedResponse())
 }

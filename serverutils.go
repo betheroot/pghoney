@@ -19,7 +19,7 @@ func isSSLRequest(payload []byte) bool {
 }
 
 // -1 means everything is null
-func indexOfLastFilledByte(buf readBuf) int {
+func indexOfLastFilledByte(buf postgresRequest) int {
 	for i := 0; i < len(buf); i += 4 {
 		word := buf[i : i+4]
 		if isNullWord(word) {
@@ -68,8 +68,8 @@ func md5AuthResponse() []byte {
 	return buf.wrap()
 }
 
-func authResponsePrefix() *writeBuf {
-	return &writeBuf{
+func authResponsePrefix() *postgresResponse {
+	return &postgresResponse{
 		buf: []byte{'R', 0, 0, 0, 0},
 		pos: 1,
 	}
@@ -113,8 +113,8 @@ func handshakeErrorResponse() []byte {
 	return buf.wrap()
 }
 
-func errorResponsePrefix() *writeBuf {
-	return &writeBuf{
+func errorResponsePrefix() *postgresResponse {
+	return &postgresResponse{
 		buf: []byte{'E', 0, 0, 0, 0},
 		pos: 1,
 	}

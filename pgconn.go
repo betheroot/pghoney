@@ -16,7 +16,7 @@ type PostgresConnection struct {
 	buffer         []byte
 	connection     net.Conn
 	hasSentStartup bool
-	postgresPacket readBuf
+	postgresPacket postgresRequest
 }
 
 func NewPostgresConnection(conn net.Conn, tcpTimeout time.Duration) *PostgresConnection {
@@ -37,7 +37,7 @@ func (pgConn *PostgresConnection) readOffConnection() error {
 	if err != nil {
 		return err
 	}
-	pgConn.postgresPacket = readBuf(pgConn.buffer)
+	pgConn.postgresPacket = postgresRequest(pgConn.buffer)
 	return nil
 }
 
