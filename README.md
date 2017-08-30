@@ -18,9 +18,10 @@ To see the cli help output:
   * maxBufSize
   * tcpTimeout
 [ ] - Create deploy script within fflemming's fork of mhn
+[ ] - Support proper error for "cancelling" a query (12345678, very similar to SSL request)
+[ ] - Support mechanism for saving passwords in a seperate database.
+[ ] - Don't hardcode the md5 salt
 
 ### TODO's
-[ ] - Support mechanism for saving passwords in a seperate database.
 [ ] - Write integration tests using nmap + psql
 [ ] - Write integration tests using github.com/lib/pq
-[ ] - Support proper error for "cancelling" a query (12345678, very similar to SSL request)

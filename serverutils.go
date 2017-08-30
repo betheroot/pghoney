@@ -63,7 +63,7 @@ func md5AuthResponse() []byte {
 	// md5
 	buf.int32(5)
 	// Byte4 - "The salt to use when encrypting the password."
-	// FIXME: Don't hardcode the salt
+	// TODO: Don't hardcode the salt
 	buf.bytes([]byte{51, 111, 191, 210})
 	return buf.wrap()
 }

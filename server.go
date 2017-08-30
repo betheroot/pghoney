@@ -166,14 +166,12 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	}
 
 	if p.pgUsers[startupMap["user"]] {
-		// TODO: Support multiple auth types
+		// TODO: Support more auth types
 		// Looking for requesting cleartext passwords would be a good way to finger print
 		// pghoney. We should have md5 be the default since it is the postgres default.
 		if p.cleartext {
-			//FIXME: Bad names
 			conn.Write(cleartextAuthResponse())
 		} else {
-			//FIXME: Bad names
 			conn.Write(md5AuthResponse())
 		}
 		return true
@@ -183,7 +181,6 @@ func (p *PostgresServer) handleStartup(buff readBuf, conn net.Conn) bool {
 	return false
 }
 
-// TODO: Save somewhere
 func handlePassword(buf readBuf, conn net.Conn) {
 	log.Debug("Handling password...")
 	conn.Write(authFailedResponse())
