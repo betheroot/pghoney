@@ -11,11 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var (
-	// TODO: Make configurable
-	tcpTimeout = 10 * time.Second
-)
-
 type PostgresServer struct {
 	listener net.Listener
 
@@ -27,11 +22,12 @@ type PostgresServer struct {
 	addr string
 	port string
 
-	pgUsers   map[string]bool
-	cleartext bool
+	pgUsers    map[string]bool
+	cleartext  bool
+	tcpTimeout time.Duration
 }
 
-func NewPostgresServer(port string, addr string, users []string, cleartext bool, hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
+func NewPostgresServer(port string, addr string, users []string, cleartext bool, tcpTimeout time.Duration, hpfeedsChan chan []byte, hpfeedsEnabled bool) *PostgresServer {
 	listener, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Errorf("Error listening: %s", err)
@@ -51,6 +47,7 @@ func NewPostgresServer(port string, addr string, users []string, cleartext bool,
 		addr:           addr,
 		port:           port,
 		cleartext:      cleartext,
+		tcpTimeout:     tcpTimeout,
 		pgUsers:        pgUsers,
 	}
 }
@@ -63,17 +60,16 @@ func (p *PostgresServer) Close() {
 func (p *PostgresServer) Listen() {
 	log.Infof("Starting to listening on %s:%s...", p.addr, p.port)
 	for {
-		//FIXME: conn is an example of primitive obsession
 		conn, err := p.listener.Accept()
 		if err != nil {
 			log.Warn("Error accepting: %s", err)
 			continue
 		}
 
-		conn.SetDeadline(time.Now().Add(tcpTimeout))
+		pgConn := NewPostgresConnection(conn, p.tcpTimeout)
 
 		p.waitGroup.Add(1)
-		go p.handleRequest(conn)
+		go p.handleRequest(pgConn)
 	}
 }
 
@@ -104,10 +100,8 @@ func (p *PostgresServer) sendToHpFeeds(pgConn *PostgresConnection) error {
 	return err
 }
 
-func (p *PostgresServer) handleRequest(conn net.Conn) {
+func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 	defer p.waitGroup.Done()
-
-	pgConn := NewPostgresConnection(conn)
 	defer pgConn.Close()
 
 	for {

@@ -4,6 +4,7 @@
   "pgUsers":["postgres"],
   "debug":false,
   "cleartext":false,
+  "server_timeout":10,
   "hpfeedsConfig":{
     "port":10000,
     "host":"127.0.0.1",

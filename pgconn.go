@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -18,7 +19,8 @@ type PostgresConnection struct {
 	postgresPacket readBuf
 }
 
-func NewPostgresConnection(conn net.Conn) *PostgresConnection {
+func NewPostgresConnection(conn net.Conn, tcpTimeout time.Duration) *PostgresConnection {
+	conn.SetDeadline(time.Now().Add(tcpTimeout))
 	return &PostgresConnection{
 		buffer:     make([]byte, maxBufSize),
 		connection: conn,

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -18,6 +19,7 @@ type Configuration struct {
 	PgUsers       []string `json:"pgUsers"`
 	Debug         bool     `json:"debug"`
 	Cleartext     bool     `json:"cleartext"`
+	TcpTimeout    int      `json:"server_timeout"`
 	HpFeedsConfig `json:"hpfeedsConfig"`
 }
 
@@ -51,6 +53,7 @@ func main() {
 	debug := config.Debug
 	cleartext := config.Cleartext
 	hpFeedsConfig := config.HpFeedsConfig
+	tcpTimeout := time.Duration(config.TcpTimeout) * time.Second
 
 	if debug {
 		log.SetLevel(log.DebugLevel)
@@ -66,6 +69,7 @@ func main() {
 		addr,
 		pgUsers,
 		cleartext,
+		tcpTimeout,
 		hpfeedsChannel,
 		hpFeedsConfig.Enabled,
 	)
