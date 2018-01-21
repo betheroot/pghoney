@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -116,6 +117,8 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 			p.sendToHpFeeds(pgConn)
 		}
 
+		pgConn.logger.Debugf("Packet contents: %v", pgConn.buffer)
+
 		//FIXME: Remove conditional complexity
 		if pgConn.isSSLRequest() {
 			pgConn.handleSSLRequest()
@@ -133,7 +136,7 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 
 		pktType := pgConn.postgresPacket.string()
 		if pktType == "p" {
-			handlePassword(pgConn)
+			p.handlePassword(pgConn)
 			break
 		} else {
 			// TODO
@@ -152,7 +155,6 @@ func (p *PostgresServer) handleStartup(pgConn *PostgresConnection) bool {
 	if (actualLength == 0) || (claimedLength != actualLength) {
 		pgConn.logger.Debugf("Invalid handshake request received from %s, ", pgConn.connection.RemoteAddr())
 		pgConn.logger.Debugf("claimed length: %d, actual length: %d", claimedLength, actualLength)
-		pgConn.logger.Debugf("Packet contents: %v", pgConn.buffer)
 		pgConn.connection.Write(handshakeErrorResponse())
 		return true
 	}
@@ -181,7 +183,23 @@ func (p *PostgresServer) handleStartup(pgConn *PostgresConnection) bool {
 	return false
 }
 
-func handlePassword(pgConn *PostgresConnection) {
-	pgConn.logger.Debug("Handling password...")
+func (p *PostgresServer) handlePassword(pgConn *PostgresConnection) {
+	pgConn.logger.Debug("Handling password")
+
+	buf := postgresRequest(pgConn.buffer)
+	// Skip the packet type
+	_ = buf.string()
+	if p.cleartext {
+		_ = buf.next(3) // null terminators and the length
+		pgConn.logger.WithFields(log.Fields{
+			"cleartext_password": fmt.Sprintf("%v", buf.string()),
+		}).Info("Got cleartext password")
+	} else {
+		// skip the length and `md5` bit
+		_ = buf.next(6)
+		pgConn.logger.WithFields(log.Fields{
+			"md5_hashed_password": fmt.Sprintf("%v", buf.string()),
+		}).Info("Got md5 hashed password")
+	}
 	pgConn.connection.Write(authFailedResponse())
 }

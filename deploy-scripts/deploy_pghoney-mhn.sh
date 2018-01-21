@@ -22,6 +22,7 @@ apt-get -y install git supervisor
 # Install golang
 curl -O https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
 tar -xvf go1.8.linux-amd64.tar.gz
+rm go1.8.linux-amd64.tar.gz
 mv go /usr/local
 echo "export PATH=$PATH:/usr/local/go/bin" > /etc/profile.d/go-path.sh
 
@@ -51,7 +52,6 @@ cat > pghoney.conf<<EOF
     "enabled":true
   }
 }
-
 EOF
 
 # Config for supervisor.
@@ -68,4 +68,3 @@ stopsignal=QUIT
 EOF
 
 supervisorctl update
-
