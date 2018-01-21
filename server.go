@@ -123,7 +123,7 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 		}
 
 		if !pgConn.hasSentStartup {
-			ok := p.handleStartup(pgConn.buffer, pgConn.connection)
+			ok := p.handleStartup(pgConn)
 			if !ok {
 				break
 			}
@@ -133,27 +133,27 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 
 		pktType := pgConn.postgresPacket.string()
 		if pktType == "p" {
-			handlePassword(pgConn.postgresPacket, pgConn.connection)
+			handlePassword(pgConn)
 			break
 		} else {
 			// TODO
-			log.Info("TODO")
+			pgConn.logger.Info("TODO")
 		}
 	}
 }
 
-func (p *PostgresServer) handleStartup(buff postgresRequest, conn net.Conn) bool {
-	log.Debug("Handling startup message...")
-	buf := postgresRequest(buff)
+func (p *PostgresServer) handleStartup(pgConn *PostgresConnection) bool {
+	pgConn.logger.Debug("Handling startup message...")
+	buf := postgresRequest(pgConn.buffer)
 	// Actual length finds the last byte and then adds two, because there is two null terminators at the end of the packet.
 	actualLength := indexOfLastFilledByte(buf) + 2
 	claimedLength := buf.int32()
 
 	if (actualLength == 0) || (claimedLength != actualLength) {
-		log.Debugf("Invalid handshake request received from %s, ", conn.RemoteAddr())
-		log.Debugf("claimed length: %d, actual length: %d", claimedLength, actualLength)
-		log.Debugf("Packet contents: %v", buff)
-		conn.Write(handshakeErrorResponse())
+		pgConn.logger.Debugf("Invalid handshake request received from %s, ", pgConn.connection.RemoteAddr())
+		pgConn.logger.Debugf("claimed length: %d, actual length: %d", claimedLength, actualLength)
+		pgConn.logger.Debugf("Packet contents: %v", pgConn.buffer)
+		pgConn.connection.Write(handshakeErrorResponse())
 		return true
 	}
 	_ = buf.int32()
@@ -170,18 +170,18 @@ func (p *PostgresServer) handleStartup(buff postgresRequest, conn net.Conn) bool
 		// Looking for requesting cleartext passwords would be a good way to finger print
 		// pghoney. We should have md5 be the default since it is the postgres default.
 		if p.cleartext {
-			conn.Write(cleartextAuthResponse())
+			pgConn.connection.Write(cleartextAuthResponse())
 		} else {
-			conn.Write(md5AuthResponse())
+			pgConn.connection.Write(md5AuthResponse())
 		}
 		return true
 	}
 
-	conn.Write(userDoesntExistResponse(startupMap["user"]))
+	pgConn.connection.Write(userDoesntExistResponse(startupMap["user"]))
 	return false
 }
 
-func handlePassword(buf postgresRequest, conn net.Conn) {
-	log.Debug("Handling password...")
-	conn.Write(authFailedResponse())
+func handlePassword(pgConn *PostgresConnection) {
+	pgConn.logger.Debug("Handling password...")
+	pgConn.connection.Write(authFailedResponse())
 }

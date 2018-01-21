@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -17,13 +18,23 @@ type PostgresConnection struct {
 	connection     net.Conn
 	hasSentStartup bool
 	postgresPacket postgresRequest
+	logger         *log.Entry
 }
 
 func NewPostgresConnection(conn net.Conn, tcpTimeout time.Duration) *PostgresConnection {
 	conn.SetDeadline(time.Now().Add(tcpTimeout))
+
+	remote_addr := strings.Split(conn.RemoteAddr().String(), ":")
+	source_ip := remote_addr[0]
+	source_port := remote_addr[1]
+	connectionLogger := log.WithFields(log.Fields{
+		"source_ip":   source_ip,
+		"source_port": source_port,
+	})
 	return &PostgresConnection{
 		buffer:     make([]byte, maxBufSize),
 		connection: conn,
+		logger:     connectionLogger,
 	}
 }
 
@@ -50,6 +61,6 @@ func (pgConn *PostgresConnection) isSSLRequest() bool {
 }
 
 func (pgConn *PostgresConnection) handleSSLRequest() {
-	log.Debug("Got ssl request...")
+	pgConn.logger.Debug("Got ssl request...")
 	pgConn.connection.Write([]byte("N"))
 }

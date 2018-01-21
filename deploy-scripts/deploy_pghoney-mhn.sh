@@ -41,6 +41,7 @@ cat > pghoney.conf<<EOF
   "pgUsers":["postgres"],
   "debug":false,
   "cleartext":false,
+  "server_timeout":10,
   "hpfeedsConfig":{
     "host": "$HPF_HOST",
     "port": $HPF_PORT,
