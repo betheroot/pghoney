@@ -117,7 +117,9 @@ func (p *PostgresServer) handleRequest(pgConn *PostgresConnection) {
 			p.sendToHpFeeds(pgConn)
 		}
 
-		pgConn.logger.Debugf("Packet contents: %v", pgConn.buffer)
+		pgConn.logger.WithFields(log.Fields{
+			"packet_contents": fmt.Sprintf("%v", pgConn.buffer),
+		}).Debug("Processing packet")
 
 		//FIXME: Remove conditional complexity
 		if pgConn.isSSLRequest() {
@@ -192,13 +194,13 @@ func (p *PostgresServer) handlePassword(pgConn *PostgresConnection) {
 	if p.cleartext {
 		_ = buf.next(3) // null terminators and the length
 		pgConn.logger.WithFields(log.Fields{
-			"cleartext_password": fmt.Sprintf("%v", buf.string()),
+			"cleartext_password": fmt.Sprintf("%s", buf.string()),
 		}).Info("Got cleartext password")
 	} else {
 		// skip the length and `md5` bit
 		_ = buf.next(6)
 		pgConn.logger.WithFields(log.Fields{
-			"md5_hashed_password": fmt.Sprintf("%v", buf.string()),
+			"md5_hashed_password": fmt.Sprintf("%s", buf.string()),
 		}).Info("Got md5 hashed password")
 	}
 	pgConn.connection.Write(authFailedResponse())
