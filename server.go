@@ -63,7 +63,9 @@ func (p *PostgresServer) Listen() {
 	for {
 		conn, err := p.listener.Accept()
 		if err != nil {
-			log.Warn("Error accepting: %s", err)
+			log.WithFields(log.Fields{
+				"err": err.Error(),
+			}).Warn("Error accepting connection.")
 			continue
 		}
 

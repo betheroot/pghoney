@@ -124,10 +124,14 @@ func handleConnReadError(err error) {
 	if err != io.EOF {
 		operr, ok := err.(*net.OpError)
 		if ok && operr.Timeout() {
-			log.Info("Timed out when reading buffer. Err: %s", err)
+			log.WithFields(log.Fields{
+				"err": err.Error(),
+			}).Info("Timed out when reading buffer.")
 			return
 		}
 
-		log.Warn("Error reading buffer. Err: %s", err)
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Warn("Error reading buffer.")
 	}
 }
