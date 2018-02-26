@@ -171,6 +171,12 @@ func (p *PostgresServer) handleStartup(pgConn *PostgresConnection) bool {
 		startupMap[k] = v
 	}
 
+	if startupMap["user"] != "" {
+		pgConn.logger.WithFields(log.Fields{
+			"username": startupMap["user"],
+		}).Info("Username with startup.")
+	}
+
 	if p.pgUsers[startupMap["user"]] {
 		// TODO: Support more auth types
 		// Looking for requesting cleartext passwords would be a good way to finger print
